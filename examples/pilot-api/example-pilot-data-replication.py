@@ -12,12 +12,8 @@ COORDINATION_URL = "redis://localhost:6379"
 if __name__ == "__main__":        
     
     # What files? Create Pilot Data Description using absolute URLs
-    base_dir = "/Users/luckow/workspace-saga/applications/pilot-store/test/data1"
-    url_list = os.listdir(base_dir)
-    # make absolute paths
-    absolute_url_list = [os.path.join(base_dir, i) for i in url_list]
     data_unit_description = {
-                               "file_urls":absolute_url_list,
+                               "file_urls":[os.path.join(os.getcwd(), "test.txt")],
                                "number_of_replicas": 2
                              }
     logging.debug("Pilot Data Description: \n%s"%str(data_unit_description))
@@ -36,7 +32,7 @@ if __name__ == "__main__":
                                 })
     
     pd2 = pilot_data_service.create_pilot({
-                                'service_url': "ssh://localhost/tmp/pilotdata-2/",
+                                'service_url': "ssh://tg804093@lonestar.tacc.teragrid.org/tmp/pilotdata-2/",
                                 'size':100,
                                'affinity_datacenter_label': "eu-de-south",              
                                'affinity_machine_label': "mymachine-2"
@@ -50,8 +46,11 @@ if __name__ == "__main__":
     du.wait()
     
     pd_list = du.list_pilot_data()
-        
     logging.debug("PDs: " + str(pd_list))
+    
+    logging.debug("Exporting PD.")
+    du.export("/tmp/output")    
+    
     
     logging.debug("Terminate Pilot Data/Compute Data Service")
     pilot_data_service.cancel()

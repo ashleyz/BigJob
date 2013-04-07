@@ -13,7 +13,7 @@ import traceback
 import pexpect
 
 sys.path.append(os.path.join(os.path.dirname(__file__), "../.."))
-from pilot.api import State
+from pilot.api import State, PilotError
 from bigjob import logger
 
 SSH_OPTS="-o UserKnownHostsFile=/dev/null -o StrictHostKeyChecking=no -o NumberOfPasswordPrompts=0"
@@ -76,7 +76,7 @@ class SSHFileAdaptor(object):
         
     def initialize_pilotdata(self):
         # check whether directory exists
-        try:
+        try:    
             command = "mkdir -p %s"%self.path 
             self.__run_ssh_command(self.userkey, self.user, self.host, command)      
         except IOError:
@@ -180,10 +180,10 @@ class SSHFileAdaptor(object):
         target_user = result.username
         logger.debug("Create directory: %s"%target_path)
         command = "mkdir %s"%target_path
-        rc = self.__run_ssh_command(self.userkey, target_user, target_host, command)
-        if rc==0:
+        try:
+            self.__run_ssh_command(self.userkey, target_user, target_host, command)
             return True
-        else:
+        except:
             return False
                 
         
@@ -295,8 +295,11 @@ class SSHFileAdaptor(object):
         logger.debug(command.strip())
         child = pexpect.spawn(command.strip(), timeout=None)
         output = child.readlines()
-        logger.debug("Run %s Output: %s"%(command, str(output)))
         child.close()
+        return_code = child.exitstatus
+        logger.debug("Run %s Output: %s Return Code: %s"%(command, str(output), str(return_code)))
+        if return_code > 0:
+            raise PilotError("Command: %s not successful"%command)
         return output 
     
 
