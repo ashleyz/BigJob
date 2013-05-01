@@ -40,7 +40,8 @@ def main():
     processes_per_node=4
     number_of_processes = 8
     #workingdirectory=os.path.join(os.getcwd(), "agent")  # working directory for agent
-    workingdirectory="agent"
+    #workingdirectory="agent"
+    workingdirectory=None
     userproxy = None # userproxy (not supported yet due to context issue w/ SAGA)
 
     

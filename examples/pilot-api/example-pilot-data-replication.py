@@ -14,12 +14,9 @@ if __name__ == "__main__":
     # What files? Create Pilot Data Description using absolute URLs
     data_unit_description = {
                                "file_urls":[os.path.join(os.getcwd(), "test.txt")],
-                               "number_of_replicas": 2
+                               "number_of_replicas": 2 # future work
                              }
     logging.debug("Pilot Data Description: \n%s"%str(data_unit_description))
-    
-    
-        
     
     
     # create pilot data service (factory for pilot stores (physical, distributed storage))
@@ -38,7 +35,7 @@ if __name__ == "__main__":
                                'affinity_machine_label': "mymachine-2"
                                 })
     
-    
+    # replicate data unit to pilot data 1
     du = pd1.submit_data_unit(data_unit_description)
     du.wait()
     # replicate data unit to pilot data 2
