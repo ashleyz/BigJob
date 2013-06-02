@@ -240,7 +240,9 @@ class PilotData(PilotData):
         
         if self.pilot_data_description!=None:
             self.service_url=self.pilot_data_description["service_url"]
-            self.size = self.pilot_data_description["size"]
+            
+            if self.pilot_data_description.has_key("size"):
+                self.size = self.pilot_data_description["size"]
             
             # initialize file adaptor
             if self.service_url.startswith("ssh:"):
@@ -478,6 +480,9 @@ class DataUnit(DataUnit):
             if self.data_unit_description.has_key("file_urls"):
                 self.data_unit_items = DataUnitItem.create_data_unit_list(self, self.data_unit_description["file_urls"]) 
 
+            if self.data_unit_description.has_key("file_root_url"):
+                self.data_unit_items = DataUnitItem.create_data_unit_list_from_root_path(self, self.data_unit_description["file_root_url"])
+
             self.url = None
 
             # register a data unit as top-level entry in Redis
@@ -542,7 +547,9 @@ class DataUnit(DataUnit):
             {
                 "filename" : { 
                                 "pilot_data" : [url1, url2],
-                                "local" : url
+                                "local" : url,
+                                "dirname": sub directory name,
+                                "filename": name of file
                              }
             }        
         """        
@@ -553,7 +560,9 @@ class DataUnit(DataUnit):
             logger.debug("Process file: %s"%(i.filename))
             result_dict[i.filename]={
                                     "pilot_data": [os.path.join(j, i.filename) for j in base_urls],
-                                    "local": i.local_url
+                                    "local": i.local_url,
+                                    "dirname": i.dirname,
+                                    "filename": i.filename
                                     }
         return result_dict
     
@@ -719,14 +728,15 @@ class DataUnitItem(object):
     """ DataUnitItem """
     DUI_ID_PREFIX="dui-"  
    
-    def __init__(self, pd=None, local_url=None):        
+    def __init__(self, pd=None, local_url=None, dirname=None):        
         if local_url!=None:
             self.id = self.DUI_ID_PREFIX + str(uuid.uuid1())
             self.local_url = local_url   
+            self.dirname = None
+            if dirname!=None:
+                self.dirname=dirname
             self.filename =  os.path.basename(local_url)    
-            #if pd != None:
-            #    self.url = pd.url + "/" + self.filename
-        
+            
         
     @classmethod    
     def __exists_file(cls, url):   
@@ -763,6 +773,20 @@ class DataUnitItem(object):
                 du_list.append(du)
     
         return du_list
+    
+    @classmethod
+    def create_data_unit_list_from_root_path(cls, pd=None, root_path=None):
+        du_list = []
+        for root, dirnames, filenames in os.walk(root_path):
+            for filename in filenames:
+                file = os.path.join(root, filename)
+                
+                relpath = os.path.relpath(file, root_path)
+                du = DataUnitItem(pd, file, os.path.dirname(relpath))
+                du_list.append(du)
+        
+        return du_list
+        
     
     @classmethod
     def create_data_unit_from_urls(cls, pd=None, urls=None):

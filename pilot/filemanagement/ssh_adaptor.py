@@ -120,7 +120,10 @@ class SSHFileAdaptor(object):
         du_items = du.list()
         for i in du_items.keys():     
             local_filename = du_items[i]["local"]
-            remote_path = os.path.join(self.path, str(du.id), os.path.basename(local_filename))
+            du_filename = du_items[i]["filename"]
+            du_dirname = du_items[i]["dirname"]
+            
+            remote_path = os.path.join(self.path, str(du.id), os.path.join(du_dirname, du_filename))
             logger.debug("Put file: %s to %s"%(i, remote_path))                        
             if local_filename.startswith("ssh://"):
                 # check if remote path is directory
@@ -141,6 +144,8 @@ class SSHFileAdaptor(object):
             source_path = result.path
             source_user = result.username
             logger.debug(str((source_host, source_path, self.host, remote_path)))
+            if du_dirname!=None:
+                self.create_remote_directory(os.path.join(self.path, str(du.id), du_dirname))
             self.__run_scp_command(self.userkey, source_user, source_host, source_path, self.user, self.host, remote_path)        
     
   
@@ -253,12 +258,9 @@ class SSHFileAdaptor(object):
             for path in expanded_path: 
                 if os.path.isdir(path):
                     logger.debug("Source path %s is directory"%path)
-                    files = os.listdir(path)
-                    for i in files:
-                        try:
-                            os.symlink(os.path.join(files, i), target_path)
-                        except:
-                            self.__print_traceback()
+                    link_to_path = os.path.join(target_path, os.path.split(path)[1])
+                    logger.debug("Symlink %s to %s "%(path, link_to_path))
+                    os.symlink(path, link_to_path)                        
                 else:
                     try:
                         os.symlink(path, os.path.join(target_path, os.path.basename(path)))
@@ -306,7 +308,7 @@ class SSHFileAdaptor(object):
 
     def __run_scp_command(self, userkey, source_user, source_host, source_path, target_user, target_host, target_path):
         logger.debug("Create scp command: source_user: %s, source_host: %s"%(source_user, source_host))
-        command = "scp " + SSH_OPTS + " "
+        command = "scp " + SSH_OPTS + " -r "
         if userkey != None:
             command = command + "-i " + userkey + " "
         
